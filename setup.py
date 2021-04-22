@@ -43,7 +43,10 @@ INSTALL_REQUIRES = [
     'seaborn',
     'plotly',
     'gensim',
-    'networkx'
+    'networkx',
+    'pvlib',
+    'pvanalytics',
+    'timezonefinder'
 ]
 
 DOCS_REQUIRE = [

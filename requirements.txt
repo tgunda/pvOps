@@ -9,3 +9,6 @@ seaborn
 plotly
 gensim
 networkx
+pvlib
+pvanalytics
+timezonefinder
