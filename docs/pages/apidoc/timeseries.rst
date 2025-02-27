@@ -37,3 +37,11 @@ timeseries.models.iec module
    :members:
    :undoc-members:
    :show-inheritance:
+
+timeseries.models.survival module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: pvops.timeseries.models.survival
+   :members:
+   :undoc-members:
+   :show-inheritance:

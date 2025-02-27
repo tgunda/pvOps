@@ -335,3 +335,63 @@ def prod_inverter_clipping_filter(prod_df, prod_col_dict, meta_df, meta_col_dict
                 "Invalid value passed to parameter `calculation`. Expected a value in ['geometric', 'threshold', 'levels']")
 
     return prod_df
+
+
+def identify_right_censored_data(om_df, col_dict):
+    """
+    Identify censored data for site-group pairs in a given DataFrame.
+
+    This function processes a DataFrame containing failure events to identify 
+    the first observed failure for each site-group pair and the last failure 
+    for each site. It constructs a new DataFrame that includes both observed 
+    and right-censored data, where unobserved site-group pairs are reported
+    with the time of the last observed failure for that site.
+
+    Parameters
+    ----------
+    om_df : pandas.DataFrame
+        A DataFrame containing failure data with at least two columns 
+        specified in `col_dict`: one for grouping and one for site.
+
+    col_dict : dict
+        A dictionary containing the following keys:
+        - 'group_by': The column name to group by.
+        - 'site': The column name representing the site.
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame indexed by unique site-group pairs, containing the 
+        first observed failure times and the last failure times, with 
+        an additional column indicating whether the failure was observed 
+        or censored.
+    """
+    # extract the columns we need
+    group_by = col_dict['group_by']
+    site = col_dict['site']
+
+    # find the first failure of a given site-group_by pair
+    first_fails_df = om_df.groupby([site, group_by]).first()
+    first_fails_df['was_observed'] = True
+
+    # find the last failure for a given site
+    last_fails_df = om_df.groupby(site).last().drop(columns=[group_by])  # we don't care about the group_by value
+    last_fails_df['was_observed'] = False
+
+    # initialize dataframe with a row for every unique site-group_by pair
+    unique_sites = om_df[site].unique()
+    unique_group_bys = om_df[group_by].unique()
+    all_sites_assets_df = pd.DataFrame(index=pd.MultiIndex.from_product([unique_sites, unique_group_bys], 
+                                                                        names=[site, group_by]),
+                                       columns=first_fails_df.columns,
+                                       dtype=first_fails_df.dtypes.values)
+
+    # prefill dataframe with the last possible times (the censored times)
+    for unique_site in unique_sites:
+        all_sites_assets_df.loc[(unique_site, slice(None)), :] = last_fails_df.loc[unique_site].values
+
+    # for every row that did have a recorded event, replace the censored time with the observed one
+    all_sites_assets_df.loc[first_fails_df.index] = first_fails_df
+
+    # set the column dtypes appropriately
+    return all_sites_assets_df.astype(first_fails_df.dtypes)
